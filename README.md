@@ -19,43 +19,43 @@ usage: java -jar TrioCNV2.jar [OPTIONS]
 1. preprocess
    This option is used to extract the information from BAM files of the trio.
 
-   usage: java -jar TrioCNV2.jar preprocess [OPTIONS]
+   usage: java -jar TrioCNV2.jar preprocess [OPTIONS]  
 
-      -R,--reference    <FILE>   reference genome file (required)
-      -B,--bams         <FILE>   bam list file (required)
-      -P,--pedigree     <FILE>   pedigree file (required)
-      -M,--mappability  <FILE>   mappability file (required)
-      -O,--outputFile   <FILE>   output folder(required)
-         --deviation    <INT>    deletion insert size cutoff, median+deviation*SD(optional, default 6)
-         --window       <INT>    window size (optional, default 200)
-         --min_mapping_quality   <INT>    minumum mapping quality (optional,default 0)
+      -R,--reference    <FILE>   reference genome file (required)  
+      -B,--bams         <FILE>   bam list file (required)  
+      -P,--pedigree     <FILE>   pedigree file (required)  
+      -M,--mappability  <FILE>   mappability file (required)  
+      -O,--outputFile   <FILE>   output folder(required)  
+         --deviation    <INT>    deletion insert size cutoff, median+deviation*SD(optional, default 6)  
+         --window       <INT>    window size (optional, default 200)  
+         --min_mapping_quality   <INT>    minumum mapping quality (optional,default 0)  
 2. call
-   This option is used to jointly detect copy number variations.
+   This option is used to jointly detect copy number variations.  
 
-   usage: java -jar TrioCNV2.jar call [OPTIONS]
+   usage: java -jar TrioCNV2.jar call [OPTIONS]  
 
-      -I,--input           <FILE>   input folder got by the preprocess step (required)
-      -P,--pedigree        <FILE>   pedigree file (required)
-      -M,--mappability     <FILE>   mappability file (required)
-      -O,--output          <FILE>   output folder (required)
-         --exclude         <FILE>   exclude regions
-         --min_mappability <FLOAT>  minumum mappability(optional, default 0)
-         --mutation_rate   <FLOAT>  de novo mutation rate (optional, default 0.0001)
-         --transition_prob <FLOAT>  probability of transition between two different copy number states(optional, default 0.00001)
-         --min_distance    <INT>    minumum distance to merge two adjacent CNVs (optional, default 10K)
-         --outlier         <FLOAT>  the predefined percentage of outliers (optional, default 0.025)
-         --nt              <INT>    number of threads (optional, default 1)
+      -I,--input           <FILE>   input folder got by the preprocess step (required)  
+      -P,--pedigree        <FILE>   pedigree file (required)  
+      -M,--mappability     <FILE>   mappability file (required)  
+      -O,--output          <FILE>   output folder (required)  
+         --exclude         <FILE>   exclude regions  
+         --min_mappability <FLOAT>  minumum mappability(optional, default 0)  
+         --mutation_rate   <FLOAT>  de novo mutation rate (optional, default 0.0001)  
+         --transition_prob <FLOAT>  probability of transition between two different copy number states(optional, default 0.00001)  
+         --min_distance    <INT>    minumum distance to merge two adjacent CNVs (optional, default 10K)  
+         --outlier         <FLOAT>  the predefined percentage of outliers (optional, default 0.025)  
+         --nt              <INT>    number of threads (optional, default 1)  
 2. refine
-   This option is used to refine breakpoints.
+   This option is used to refine breakpoints.  
 
-   usage: java -jar TrioCNV2.jar refine [OPTIONS]
+   usage: java -jar TrioCNV2.jar refine [OPTIONS]  
 
-      -R,--reference    <FILE>   reference genome file (required)
-      -B,--bams         <FILE>   bam list file (required)
-      -P,--pedigree     <FILE>   pedigree file (required)
-      -I,--input        <FILE>   input folder got by the preprocess step (required)
-      -O,--output       <FILE>   output folder(required)
-         --deviation    <INT>    deletion insert size cutoff, median+deviation*SD(optional, default 3)
-         --size         <INT>    the size of expanded breakpoint regions (optional, default 400)
+      -R,--reference    <FILE>   reference genome file (required)  
+      -B,--bams         <FILE>   bam list file (required)  
+      -P,--pedigree     <FILE>   pedigree file (required)  
+      -I,--input        <FILE>   input folder got by the preprocess step (required)  
+      -O,--output       <FILE>   output folder(required)  
+         --deviation    <INT>    deletion insert size cutoff, median+deviation*SD(optional, default 3)  
+         --size         <INT>    the size of expanded breakpoint regions (optional, default 400)  
 # Contact 
    yongzhuang.liu@hit.edu.cn
