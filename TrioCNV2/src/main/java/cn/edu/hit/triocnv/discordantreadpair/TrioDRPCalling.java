@@ -77,7 +77,7 @@ public class TrioDRPCalling {
 		svWriter.write("#CHROM" + "\t" + "START" + "\t" + "END" + "\t" + fatherID + "\t" + motherID + "\t" + offspringID
 				+ "\t" + "Quality" + "\t" + "Evidence" + "\n");
 		for (SVRecord svRecord : svRecordList) {
-			if (svRecord.getLength() > 100) {
+			if (svRecord.getLength() > 50) {
 				svWriter.write(svRecord + "\tRP" + "\n");
 			}
 		}

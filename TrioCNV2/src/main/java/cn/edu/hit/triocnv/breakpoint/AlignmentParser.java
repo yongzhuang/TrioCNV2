@@ -36,87 +36,94 @@ public class AlignmentParser {
 	public SVRecord parse() throws IOException {
 		int[] interval = new int[2];
 		HashMap<String, SAMRecord> samRecordTable = new HashMap<String, SAMRecord>();
-		SamReader samReader = SamReaderFactory.makeDefault().open(new File(samFile));
-		SAMRecordIterator samRecordIterator = samReader.iterator();
-		while (samRecordIterator.hasNext()) {
-			SAMRecord samRecord = samRecordIterator.next();
-			if (samRecord.getMappingQuality() > 0) {
-				String readName = samRecord.getReadName();
-				if (samRecordTable.containsKey(readName)) {
-					if (isRightClippedRead(samRecord)) {
-						interval[0] = samRecord.getAlignmentEnd() + 1;
-					}
-					if (isLeftClippedRead(samRecord)) {
-						interval[1] = samRecord.getAlignmentStart() - 1;
-					}
-					SAMRecord samRecord2 = samRecordTable.get(readName);
-					if (isRightClippedRead(samRecord2)) {
-						interval[0] = samRecord2.getAlignmentEnd() + 1;
-					}
-					if (isLeftClippedRead(samRecord2)) {
-						interval[1] = samRecord2.getAlignmentStart() - 1;
-					}
-					samRecordTable.remove(readName);
-					if (interval[0] > 0 && interval[1] > 0) {
-						int start = svRecord.getStart() - outer - 1000 - 1 + interval[0];
-						int end = svRecord.getStart() - outer - 1000 - 1 + interval[1];
-						if (start < end) {
-							SVRecord resultSVRecord = new SVRecord(svRecord.getChrom(), start, end,
-									svRecord.getSVTypeArray(), svRecord.getEvidence() + ":BP");
-							return resultSVRecord;
+
+		SVRecord resultSVRecord = null;
+		try (SamReader samReader = SamReaderFactory.makeDefault().open(new File(samFile))) {
+			SAMRecordIterator samRecordIterator = samReader.iterator();
+			while (samRecordIterator.hasNext()) {
+				SAMRecord samRecord = samRecordIterator.next();
+				if (samRecord.getMappingQuality() > 0) {
+					String readName = samRecord.getReadName();
+					if (samRecordTable.containsKey(readName)) {
+						if (isRightClippedRead(samRecord)) {
+							interval[0] = samRecord.getAlignmentEnd() + 1;
 						}
+						if (isLeftClippedRead(samRecord)) {
+							interval[1] = samRecord.getAlignmentStart() - 1;
+						}
+						SAMRecord samRecord2 = samRecordTable.get(readName);
+						if (isRightClippedRead(samRecord2)) {
+							interval[0] = samRecord2.getAlignmentEnd() + 1;
+						}
+						if (isLeftClippedRead(samRecord2)) {
+							interval[1] = samRecord2.getAlignmentStart() - 1;
+						}
+						samRecordTable.remove(readName);
+						if (interval[0] > 0 && interval[1] > 0) {
+							int start = svRecord.getStart() - outer - 1000 - 1 + interval[0];
+							int end = svRecord.getStart() - outer - 1000 - 1 + interval[1];
+							if (start < end) {
+								resultSVRecord = new SVRecord(svRecord.getChrom(), start, end,
+										svRecord.getSVTypeArray(), svRecord.getEvidence() + ":BP");
+								break;
+							}
+						}
+					} else {
+						samRecordTable.put(readName, samRecord);
 					}
-				} else {
-					samRecordTable.put(readName, samRecord);
 				}
 			}
+			samRecordIterator.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		samRecordIterator.close();
-		samReader.close();
-		return null;
+		return resultSVRecord;
 	}
 
 	public SVRecord parseTandemDuplication() throws IOException {
 		int[] interval = new int[2];
 		HashMap<String, SAMRecord> samRecordTable = new HashMap<String, SAMRecord>();
-		SamReader samReader = SamReaderFactory.makeDefault().open(new File(samFile));
-		SAMRecordIterator samRecordIterator = samReader.iterator();
-		while (samRecordIterator.hasNext()) {
-			SAMRecord samRecord = samRecordIterator.next();
-			if (samRecord.getMappingQuality() > 0) {
-				String readName = samRecord.getReadName();
-				if (samRecordTable.containsKey(readName)) {
-					if (isLeftClippedRead(samRecord)) {
-						interval[0] = samRecord.getAlignmentStart();
-					}
-					if (isRightClippedRead(samRecord)) {
-						interval[1] = samRecord.getAlignmentEnd();
-					}
-					SAMRecord samRecord2 = samRecordTable.get(readName);
-					if (isLeftClippedRead(samRecord2)) {
-						interval[0] = samRecord2.getAlignmentStart();
-					}
-					if (isRightClippedRead(samRecord2)) {
-						interval[1] = samRecord2.getAlignmentEnd();
-					}
-					if (interval[0] > 0 && interval[1] > 0) {
-						int start = svRecord.getStart() - outer - 1000 - 1 + interval[0];
-						int end = svRecord.getStart() - outer - 1000 - 1 + interval[1];
-						if (start < end) {
-							SVRecord resultSVRecord = new SVRecord(svRecord.getChrom(), start, end,
-									svRecord.getSVTypeArray(), svRecord.getEvidence() + ":BP");
-							return resultSVRecord;
+		SVRecord resultSVRecord = null;
+		try (SamReader samReader = SamReaderFactory.makeDefault().open(new File(samFile))) {
+			SAMRecordIterator samRecordIterator = samReader.iterator();
+			while (samRecordIterator.hasNext()) {
+				SAMRecord samRecord = samRecordIterator.next();
+				if (samRecord.getMappingQuality() > 0) {
+					String readName = samRecord.getReadName();
+					if (samRecordTable.containsKey(readName)) {
+						if (isLeftClippedRead(samRecord)) {
+							interval[0] = samRecord.getAlignmentStart();
 						}
+						if (isRightClippedRead(samRecord)) {
+							interval[1] = samRecord.getAlignmentEnd();
+						}
+						SAMRecord samRecord2 = samRecordTable.get(readName);
+						if (isLeftClippedRead(samRecord2)) {
+							interval[0] = samRecord2.getAlignmentStart();
+						}
+						if (isRightClippedRead(samRecord2)) {
+							interval[1] = samRecord2.getAlignmentEnd();
+						}
+						if (interval[0] > 0 && interval[1] > 0) {
+							int start = svRecord.getStart() - outer - 1000 - 1 + interval[0];
+							int end = svRecord.getStart() - outer - 1000 - 1 + interval[1];
+							if (start < end) {
+								resultSVRecord = new SVRecord(svRecord.getChrom(), start, end,
+										svRecord.getSVTypeArray(), svRecord.getEvidence() + ":BP");
+								break;
+							}
+						}
+						samRecordTable.remove(readName);
+					} else {
+						samRecordTable.put(readName, samRecord);
 					}
-					samRecordTable.remove(readName);
-				} else {
-					samRecordTable.put(readName, samRecord);
 				}
 			}
+			samRecordIterator.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		samRecordIterator.close();
-		samReader.close();
-		return null;
+		return resultSVRecord;
 	}
 
 	private boolean isLeftClippedRead(SAMRecord record) {

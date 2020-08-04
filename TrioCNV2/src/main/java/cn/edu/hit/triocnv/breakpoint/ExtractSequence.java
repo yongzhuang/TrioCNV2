@@ -26,6 +26,7 @@ public class ExtractSequence {
 	}
 
 	public void getSubSequence(String contig, long start, long end) throws IOException {
+		
 		ReferenceSequence referenceSequence = referenceSequenceFile.getSubsequenceAt(contig, start, end);
 		String header = ">" + contig + ":" + start + "-" + end;
 		String sequence = referenceSequence.getBaseString();

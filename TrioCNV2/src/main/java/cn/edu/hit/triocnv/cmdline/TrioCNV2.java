@@ -2,7 +2,6 @@ package cn.edu.hit.triocnv.cmdline;
 
 import cn.edu.hit.triocnv.breakpoint.Alignment;
 import cn.edu.hit.triocnv.breakpoint.Assembly;
-import cn.edu.hit.triocnv.breakpoint.BreakPointCalling;
 import cn.edu.hit.triocnv.breakpoint.ExtractSequence;
 import cn.edu.hit.triocnv.breakpoint.MultiThreadBreakPointCalling;
 import cn.edu.hit.triocnv.discordantreadpair.EstimateInsertSizes;
@@ -78,7 +77,7 @@ public class TrioCNV2 {
 				String mappability = commandLine.getOptionValue("mappability");
 				String output = commandLine.getOptionValue("output");
 				int window = Integer.parseInt(commandLine.getOptionValue("window", "200"));
-				int deviation = Integer.parseInt(commandLine.getOptionValue("deviation", "6"));
+				int deviation = Integer.parseInt(commandLine.getOptionValue("deviation", "9"));
 				int min_mapping_quality = Integer.parseInt(commandLine.getOptionValue("min_mapping_quality", "0"));
 				File outputDir = new File(output);
 				if (outputDir.exists()) {
@@ -174,7 +173,7 @@ public class TrioCNV2 {
 			String outputFolder = commandLine.getOptionValue("output");
 			String inputFolder = commandLine.getOptionValue("input");
 			int size = Integer.parseInt(commandLine.getOptionValue("size", "400"));
-			int deviation = Integer.parseInt(commandLine.getOptionValue("devitation", "3"));
+			int deviation = Integer.parseInt(commandLine.getOptionValue("devitation", "9"));
 			int numOfThreads = Integer.parseInt(commandLine.getOptionValue("nt", "8"));
 			File outputDir = new File(outputFolder);
 			if (outputDir.exists()) {
@@ -352,7 +351,7 @@ public class TrioCNV2 {
 				+ "-B,--bams\t<FILE>\tbam list file (required)\n" + "-P,--pedigree\t<FILE>\tpedigree file (required)\n"
 				+ "-M,--mappability\t<FILE>\tmappability file (required)\n"
 				+ "-O,--output\t<FILE>\toutput folder(required)\n"
-				+ "	  --deviation\t<INT>\tdeletion insert size cutoff, median+deviation*SD(optional, default 6)\n"
+				+ "	  --deviation\t<INT>\tdeletion insert size cutoff, median+deviation*MAD(optional, default 9)\n"
 				+ "   --window\t<INT>\twindow size (optional, default 200)\n"
 				+ "   --min_mapping_quality\t<INT>\tminumum mapping quality (optional,default 0)\n";
 		String usage2 = "usage: java -jar TrioCNV2.jar " + command + " [OPTIONS]\n\n"
@@ -372,7 +371,7 @@ public class TrioCNV2 {
 				+ "-B,--bams\t<FILE>\tbam list file (required)\n" + "-P,--pedigree\t<FILE>\tpedigree file (required)\n"
 				+ "-I,--input\t<FILE>\tinput folder got by the preprocess step (required)\n"
 				+ "-O,--output\t<FILE>\toutput folder(required)\n"
-				+ "	  --deviation\t<INT>\tdeletion insert size cutoff, median+deviation*SD(optional, default 3)\n"
+				+ "	  --deviation\t<INT>\tdeletion insert size cutoff, median+deviation*MAD(optional, default 9)\n"
 				+ "   --size\t<INT>\tthe size of expanded breakpoint regions (optional, default 400)\n"
 				+ "   --nt\t<INT>\tnumber of threads (optional, default 8)\n";
 		if (command.equals("preprocess")) {

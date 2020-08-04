@@ -63,7 +63,7 @@ public class Clustering {
 	public List<SVRecord> cluster(SVType type) throws IOException {
 		int[] parameters = getMaxValuesOfParameters(parameterMap);
 		int median = parameters[0];
-		int standardDeviation = parameters[1];
+		int mad = parameters[1];
 		List<SVRecord> outputRecordList = new ArrayList();
 		int[] visit = new int[readPairList.size()];
 		List<ReadPair> nodeList = null;
@@ -77,16 +77,14 @@ public class Clustering {
 				for (int j = i + 1; j < readPairList.size(); j++) {
 					if (visit[j] == 0) {
 						ReadPair readPair = readPairList.get(j);
-						if (Math.abs(readPair.getLeftFirst() - lastReadPair.getLeftFirst()) > (median
-								+ DEVIATION * standardDeviation)) {
+						if (Math.abs(
+								readPair.getLeftFirst() - lastReadPair.getLeftFirst()) > (median+DEVIATION * mad*1.4826)) {
 							break;
 						}
 						for (int k = nodeList.size() - 1; k >= 0; k--) {
 							ReadPair node = nodeList.get(k);
-							if (Math.abs(readPair.getLeftFirst() - node.getLeftFirst()) < (median
-									+ DEVIATION * standardDeviation)
-									&& Math.abs(readPair.getRightSecond() - node.getRightSecond()) < (median
-											+ DEVIATION * standardDeviation)) {
+							if (Math.abs(readPair.getLeftFirst() - node.getLeftFirst()) < (median+DEVIATION * mad*1.4826)
+									&& Math.abs(readPair.getRightSecond() - node.getRightSecond()) < (median+DEVIATION * mad*1.4826)) {
 								if (type == SVType.DELETION) {
 									if (Math.max(readPair.getRightFirst(), node.getRightFirst()) < Math
 											.min(readPair.getLeftSecond(), node.getLeftSecond())) {
@@ -107,7 +105,7 @@ public class Clustering {
 					}
 				}
 				if (nodeList.size() < MAX_READ_PAIRS && nodeList.size() > MIN_READ_PAIRS) {
-					Graph<ReadPair, DefaultEdge> g = addReadPairEages(type,nodeList, median, standardDeviation);
+					Graph<ReadPair, DefaultEdge> g = addReadPairEages(type, nodeList, median, mad);
 					SVRecord outputRecord = getClique(g, type);
 					if (outputRecord != null) {
 						outputRecordList.add(outputRecord);
@@ -119,7 +117,7 @@ public class Clustering {
 	}
 
 	public Graph<ReadPair, DefaultEdge> addReadPairEages(SVType type, List<ReadPair> readPairList, int median,
-			int standardDeviation) {
+			int mad) {
 		List<ReadPair> nodeList = new ArrayList();
 		Graph<ReadPair, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
 		for (int i = 0; i < readPairList.size(); i++) {
@@ -132,10 +130,8 @@ public class Clustering {
 			ReadPair startNode = nodeList.get(i);
 			for (int j = i + 1; j < nodeList.size(); j++) {
 				ReadPair endNode = nodeList.get(j);
-				if (Math.abs(
-						endNode.getLeftFirst() - startNode.getLeftFirst()) < (median + DEVIATION * standardDeviation)
-						&& Math.abs(endNode.getRightSecond() - startNode.getRightSecond()) < (median
-								+ DEVIATION * standardDeviation)) {
+				if (Math.abs(endNode.getLeftFirst() - startNode.getLeftFirst()) < ( median+DEVIATION * mad*1.4826) && Math
+						.abs(endNode.getRightSecond() - startNode.getRightSecond()) < (median+DEVIATION * mad*1.4826)) {
 					if (type == SVType.DELETION) {
 						if (Math.max(endNode.getRightFirst(), endNode.getRightFirst()) < Math
 								.min(endNode.getLeftSecond(), endNode.getLeftSecond())) {
@@ -155,19 +151,19 @@ public class Clustering {
 		int[] parameters = new int[2];
 		Set<String> sampleSet = parameterMap.keySet();
 		int maxMedian = 0;
-		int maxSD = 0;
+		int maxMAD = 0;
 		for (String sample : sampleSet) {
 			int tmpMedian = parameterMap.get(sample)[0];
-			int tmpSD = parameterMap.get(sample)[1];
+			int tmpMAD = parameterMap.get(sample)[1];
 			if (tmpMedian > maxMedian) {
 				maxMedian = tmpMedian;
 			}
-			if (tmpSD > maxSD) {
-				maxSD = tmpSD;
+			if (tmpMAD > maxMAD) {
+				maxMAD = tmpMAD;
 			}
 		}
 		parameters[0] = maxMedian;
-		parameters[1] = maxSD;
+		parameters[1] = maxMAD;
 		return parameters;
 	}
 }

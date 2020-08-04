@@ -37,60 +37,64 @@ public class SoftClipCalling {
 		this.bamFileList = bamFileList;
 	}
 
-	public SVRecord run(SVRecord svRecord, Map<String, Integer> sampleIndex, QueryInterval[] queryIntervals) throws IOException {
+	public SVRecord run(SVRecord svRecord, Map<String, Integer> sampleIndex, QueryInterval[] queryIntervals)
+			throws IOException {
 		List<Integer> endList = new ArrayList();
 		List<Integer> startList = new ArrayList();
 		for (String bamFile : bamFileList) {
-			SamReader samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
-			String sample = samReader.getFileHeader().getReadGroups().get(0).getSample();
-			SVType type = svRecord.getSVTypeArray()[sampleIndex.get(sample).intValue()];
-			if (type == SVType.REFERENCE) {
-				continue;
-			}
-			QueryInterval[] optimizedQueryIntervals = QueryInterval.optimizeIntervals(queryIntervals);
-			SAMRecordIterator samRecordIterator = samReader.query(optimizedQueryIntervals, false);
-			while (samRecordIterator.hasNext()) {
-				SAMRecord samRecord = samRecordIterator.next();
-				if (type == SVType.DELETION) {
-					if (isLeftSoftClippedRead(samRecord) && samRecord.getReadPairedFlag()
-							&& !samRecord.getMateUnmappedFlag()) {
-						QueryInterval interval = optimizedQueryIntervals[optimizedQueryIntervals.length - 1];
-						if (samRecord.getAlignmentStart() >= interval.start
-								&& samRecord.getAlignmentStart() <= interval.end) {
-							endList.add(samRecord.getAlignmentStart());
-						}
-					}
-					if (isRightSoftClippedRead(samRecord) && samRecord.getReadPairedFlag()
-							&& !samRecord.getMateUnmappedFlag()) {
-						QueryInterval interval = optimizedQueryIntervals[0];
-						if (samRecord.getAlignmentEnd() >= interval.start
-								&& samRecord.getAlignmentEnd() <= interval.end) {
-							startList.add(samRecord.getAlignmentEnd());
-						}
-					}
+			File samReaderFile = new File(bamFile);
+			try (SamReader samReader = SamReaderFactory.makeDefault().open(samReaderFile)) {
+				String sample = samReader.getFileHeader().getReadGroups().get(0).getSample();
+				SVType type = svRecord.getSVTypeArray()[sampleIndex.get(sample).intValue()];
+				if (type == SVType.REFERENCE) {
+					continue;
 				}
-				if (type == SVType.DUPLICATION) {
-					if (isLeftSoftClippedRead(samRecord) && samRecord.getReadPairedFlag()
-							&& !samRecord.getMateUnmappedFlag()) {
-						QueryInterval interval = optimizedQueryIntervals[0];
-						if (samRecord.getAlignmentStart() >= interval.start
-								&& samRecord.getAlignmentStart() <= interval.end) {
-							startList.add(samRecord.getAlignmentStart());
+				QueryInterval[] optimizedQueryIntervals = QueryInterval.optimizeIntervals(queryIntervals);
+				SAMRecordIterator samRecordIterator = samReader.query(optimizedQueryIntervals, false);
+				while (samRecordIterator.hasNext()) {
+					SAMRecord samRecord = samRecordIterator.next();
+					if (type == SVType.DELETION) {
+						if (isLeftSoftClippedRead(samRecord) && samRecord.getReadPairedFlag()
+								&& !samRecord.getMateUnmappedFlag()) {
+							QueryInterval interval = optimizedQueryIntervals[optimizedQueryIntervals.length - 1];
+							if (samRecord.getAlignmentStart() >= interval.start
+									&& samRecord.getAlignmentStart() <= interval.end) {
+								endList.add(samRecord.getAlignmentStart());
+							}
+						}
+						if (isRightSoftClippedRead(samRecord) && samRecord.getReadPairedFlag()
+								&& !samRecord.getMateUnmappedFlag()) {
+							QueryInterval interval = optimizedQueryIntervals[0];
+							if (samRecord.getAlignmentEnd() >= interval.start
+									&& samRecord.getAlignmentEnd() <= interval.end) {
+								startList.add(samRecord.getAlignmentEnd());
+							}
 						}
 					}
+					if (type == SVType.DUPLICATION) {
+						if (isLeftSoftClippedRead(samRecord) && samRecord.getReadPairedFlag()
+								&& !samRecord.getMateUnmappedFlag()) {
+							QueryInterval interval = optimizedQueryIntervals[0];
+							if (samRecord.getAlignmentStart() >= interval.start
+									&& samRecord.getAlignmentStart() <= interval.end) {
+								startList.add(samRecord.getAlignmentStart());
+							}
+						}
 
-					if (isRightSoftClippedRead(samRecord) && samRecord.getReadPairedFlag()
-							&& !samRecord.getMateUnmappedFlag()) {
-						QueryInterval interval = optimizedQueryIntervals[optimizedQueryIntervals.length - 1];
-						if (samRecord.getAlignmentEnd() >= interval.start
-								&& samRecord.getAlignmentEnd() <= interval.end) {
-							endList.add(samRecord.getAlignmentStart());
+						if (isRightSoftClippedRead(samRecord) && samRecord.getReadPairedFlag()
+								&& !samRecord.getMateUnmappedFlag()) {
+							QueryInterval interval = optimizedQueryIntervals[optimizedQueryIntervals.length - 1];
+							if (samRecord.getAlignmentEnd() >= interval.start
+									&& samRecord.getAlignmentEnd() <= interval.end) {
+								endList.add(samRecord.getAlignmentStart());
+							}
 						}
 					}
 				}
+				samRecordIterator.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			samRecordIterator.close();
-			samReader.close();
 		}
 		int[] startRepeatElement = mostRepeatElement(startList);
 		int[] endRepeatElement = mostRepeatElement(endList);

@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import org.apache.commons.io.IOUtils;
+
 /**
  *
  * @author Yongzhuang Liu
@@ -35,58 +37,64 @@ public class Alignment {
 
 	private void execute(String command) throws InterruptedException, IOException {
 
-		try {
-			ProcessBuilder builder = new ProcessBuilder("/bin/bash", "-c", command);
-			builder.directory(new File(workDir));
-			builder.redirectErrorStream(true);
-			Process process = builder.start();
-			new Thread() {
-				@Override
-				public void run() {
-					BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
-					String line = null;
-
-					try {
-						while ((line = in.readLine()) != null) {
-							System.out.println(line);
-						}
-					} catch (IOException e) {
-						e.printStackTrace();
-					} finally {
-						try {
-							in.close();
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			}.start();
-
-			new Thread() {
-				@Override
-				public void run() {
-					BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-					String line = null;
-
-					try {
-						while ((line = err.readLine()) != null) {
-							System.out.println(line);
-						}
-					} catch (IOException e) {
-						e.printStackTrace();
-					} finally {
-						try {
-							err.close();
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			}.start();
-			process.waitFor();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
+		ProcessBuilder builder = new ProcessBuilder("/bin/bash", "-c", command);
+		builder.redirectErrorStream(true);
+		builder.directory(new File(workDir));
+		Process process = builder.start();
+//		try {
+//			InputStream is1 = process.getInputStream();
+//			InputStream is2 = process.getErrorStream();
+//			new Thread() {
+//				@Override
+//				public void run() {
+//					BufferedReader in = new BufferedReader(new InputStreamReader(is1));
+//					String line = null;
+//					try {
+//						while ((line = in.readLine()) != null) {
+//							System.out.println(line);
+//						}
+//					} catch (IOException e) {
+//						e.printStackTrace();
+//					} finally {						
+//						try {
+//							in.close();
+//						} catch (IOException e) {
+//							e.printStackTrace();
+//						}
+//					}
+//				}
+//			}.start();
+//
+//			new Thread() {
+//				@Override
+//				public void run() {
+//					BufferedReader err = new BufferedReader(new InputStreamReader(is2));
+//					String line = null;
+//
+//					try {
+//						while ((line = err.readLine()) != null) {
+//							System.out.println(line);
+//						}
+//					} catch (IOException e) {
+//						e.printStackTrace();
+//					} finally {
+//						try {
+//							err.close();
+//						} catch (IOException e) {
+//							e.printStackTrace();
+//						}
+//					}
+//				}
+//			}.start();
+		int value = process.waitFor();
+		// System.out.println(command + "=" + value);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		finally {
+		IOUtils.closeQuietly(process.getInputStream());
+		IOUtils.closeQuietly(process.getOutputStream());
+		IOUtils.closeQuietly(process.getErrorStream());
+//		}
 	}
 }

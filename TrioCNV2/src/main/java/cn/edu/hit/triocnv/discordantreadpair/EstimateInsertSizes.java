@@ -70,8 +70,9 @@ public class EstimateInsertSizes {
 			samReader.close();
 			double[] newInsertSizeArray = getOutliersRemovedArray(insertSizeArray, OUTLIER, 1 - OUTLIER);
 			double median = (new Median()).evaluate(newInsertSizeArray);
-			double standardDeviation = (new StandardDeviation()).evaluate(newInsertSizeArray);
-			parameterWriter.write(sample + "\t" + median + "\t" + standardDeviation + "\n");
+//			double standardDeviation = (new StandardDeviation()).evaluate(newInsertSizeArray);
+			double mad =getMedianAbsoluteDeviation(insertSizeArray);
+			parameterWriter.write(sample + "\t" + median + "\t" + mad + "\n");
 		}
 		parameterWriter.close();
 	}
@@ -87,4 +88,14 @@ public class EstimateInsertSizes {
 		}
 		return data2;
 	}
+	public double getMedianAbsoluteDeviation(double[] autoCorrelationValues) {
+	    double[] tempTable = new double[autoCorrelationValues.length];
+	    Median m = new Median();
+	    double medianValue = m.evaluate(autoCorrelationValues);
+	    for (int i = 0; i < autoCorrelationValues.length; i++) {
+	        tempTable[i] = Math.abs(autoCorrelationValues[i] - medianValue);
+	    }
+	    return m.evaluate(tempTable);
+	}
+	
 }

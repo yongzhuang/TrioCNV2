@@ -94,7 +94,7 @@ public class TrioExtractDRPs {
 	}
 
 	public List<List<ReadPair>> extractDiscordantReadPairs(String bamFile, String chrom, int start, int end, int median,
-			int sd, int deviation) throws IOException {
+			int mad, int deviation) throws IOException {
 		List<List<ReadPair>> drpList = new ArrayList();
 		ReferenceSource referenceSource = new ReferenceSource(new File(referenceFile));
 		SamReader samReader = SamReaderFactory.makeDefault().referenceSource(referenceSource).open(new File(bamFile));
@@ -112,7 +112,7 @@ public class TrioExtractDRPs {
 			int insertSize = Math.abs(samRecord.getInferredInsertSize());
 			SamPairUtil.PairOrientation orientation = SamPairUtil.getPairOrientation(samRecord);
 			if (orientation == SamPairUtil.PairOrientation.FR) {
-				if (insertSize > median + sd * deviation) {
+				if (insertSize > median + mad * deviation) {
 					if (delSAMRecordTable.containsKey(readName)) {
 						SAMRecord leftSAMRecord = delSAMRecordTable.get(readName);
 						String sample = samRecord.getReadGroup().getSample();

@@ -55,7 +55,7 @@ public class SingleThreadRefinement implements Runnable {
 	private String pedFile;
 	private int size;
 	private int deviation;
-	private static final int MAX_NUM_READS_ASSEMBLY=1000;
+	private static final int MAX_NUM_READS_ASSEMBLY=2000;
 
 	public SingleThreadRefinement(List<SVRecord> svRecordList, String referenceFile, List<String> bamFileList,
 			String pedFile, String parameterFile, String outputFolder, int size, int deviation) {
@@ -128,15 +128,12 @@ public class SingleThreadRefinement implements Runnable {
 						queryIntervals);
 				if (softclipSVRecord != null) {
 					resultSVRecordList.add(softclipSVRecord);
-				} else {
+				} 
+				else {
 					String prefixFile = svRecord.getChrom() + ":" + svRecord.getStart() + "-" + svRecord.getEnd();
 					String assemblyWorkDir = outputFolder + "/" + prefixFile;
 					File assemblyWorkDirFile = new File(assemblyWorkDir);
-					if (assemblyWorkDirFile.exists()) {
-						if (!assemblyWorkDirFile.isDirectory()) {
-							return;
-						}
-					} else {
+					if (!assemblyWorkDirFile.exists()) {
 						assemblyWorkDirFile.mkdir();
 					}
 					String fastqFile1 = assemblyWorkDirFile.getAbsolutePath() + "/" + prefixFile + "_1.fastq";
@@ -182,11 +179,17 @@ public class SingleThreadRefinement implements Runnable {
 								}
 								if (assemblySVRecord != null) {
 									resultSVRecordList.add(assemblySVRecord);
+								}else {
+									if(svRecord.getEvidence().split(":").length==2) {
+										resultSVRecordList.add(svRecord);
+									}
 								}
 							}
 						}
 					}
-					deleteDir(assemblyWorkDirFile);
+					if (assemblyWorkDirFile.exists()) {
+						deleteDir(assemblyWorkDirFile);
+					}
 				}
 			}
 			FileOutputStream out = new FileOutputStream(new File(outputFolder + "/Temp_CNV.txt"), true);
@@ -224,131 +227,135 @@ public class SingleThreadRefinement implements Runnable {
 		FastqWriter fastqWriter1 = null;
 		FastqWriter fastqWriter2 = null;
 		for (String bamFile : bamFileList) {
-			SamReader samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
-			String sample = samReader.getFileHeader().getReadGroups().get(0).getSample();
-			SVType type = svRecord.getSVTypeArray()[sampleIndex.get(sample).intValue()];
-			if (type == SVType.REFERENCE) {
-				continue;
-			}
-			int[] parameters = parameterMap.get(sample);
-			int median = parameters[0];
-			int sd = parameters[1];
-			HashMap<String, SAMRecord> samRecordTable = new HashMap<String, SAMRecord>();
-			SAMRecordIterator samRecordIterator = samReader.query(queryIntervals, true);
-			int numOfReads = 0;
-			while (samRecordIterator.hasNext()) {
-				SAMRecord samRecord = samRecordIterator.next();
-				String readName = samRecord.getReadName();
-				if (samRecord.getReadPairedFlag() && !samRecord.isSecondaryOrSupplementary()) {
-					if (samRecordTable.containsKey(readName)) {
-						SAMRecord samRecord2 = samRecordTable.get(readName);
-						if ((type == SVType.DELETION && isDeletionDRPs(samRecord, samRecord2, median, sd, deviation))
-								|| (type == SVType.DUPLICATION && isDuplicationDRPs(samRecord, samRecord2))
-								|| isOneEndAnchoredRead(samRecord, samRecord2)
-								|| isSoftClippedRead(samRecord, samRecord2)) {
+			try (SamReader samReader = SamReaderFactory.makeDefault().open(new File(bamFile))) {
+				String sample = samReader.getFileHeader().getReadGroups().get(0).getSample();
+				SVType type = svRecord.getSVTypeArray()[sampleIndex.get(sample).intValue()];
+				if (type == SVType.REFERENCE) {
+					continue;
+				}
+				int[] parameters = parameterMap.get(sample);
+				int median = parameters[0];
+				int sd = parameters[1];
+				HashMap<String, SAMRecord> samRecordTable = new HashMap<String, SAMRecord>();
+				SAMRecordIterator samRecordIterator = samReader.query(queryIntervals, true);
+				int numOfReads = 0;
+				while (samRecordIterator.hasNext()) {
+					SAMRecord samRecord = samRecordIterator.next();
+					String readName = samRecord.getReadName();
+					if (samRecord.getReadPairedFlag() && !samRecord.isSecondaryOrSupplementary()) {
+						if (samRecordTable.containsKey(readName)) {
+							SAMRecord samRecord2 = samRecordTable.get(readName);
+							if ((type == SVType.DELETION
+									&& isDeletionDRPs(samRecord, samRecord2, median, sd, deviation))
+									|| (type == SVType.DUPLICATION && isDuplicationDRPs(samRecord, samRecord2))
+									|| isOneEndAnchoredRead(samRecord, samRecord2)
+									|| isSoftClippedRead(samRecord, samRecord2)) {
+								if (fastqWriter1 == null) {
+									fastqWriter1 = new BasicFastqWriter(new File(fastqFile1));
+								}
+								if (fastqWriter2 == null) {
+									fastqWriter2 = new BasicFastqWriter(new File(fastqFile2));
+								}
+								FastqRecord fastqRecord = FastqEncoder.asFastqRecord(samRecord);
+								FastqRecord fastqRecord2 = FastqEncoder.asFastqRecord(samRecord2);
+								if (isProperPairedReads(samRecord, samRecord2)) {
+									numOfReads++;
+									if (numOfReads > MAX_NUM_READS_ASSEMBLY) {
+										if (fastqWriter1 != null && fastqWriter2 != null) {
+											fastqWriter1.close();
+											fastqWriter2.close();
+										}
+										return;
+									}
+									if (samRecord.getFirstOfPairFlag()) {
+										fastqWriter1.write(fastqRecord);
+									}
+									if (samRecord.getSecondOfPairFlag()) {
+										fastqWriter2.write(fastqRecord);
+									}
+									if (samRecord2.getFirstOfPairFlag()) {
+										fastqWriter1.write(fastqRecord2);
+									}
+									if (samRecord2.getSecondOfPairFlag()) {
+										fastqWriter2.write(fastqRecord2);
+									}
+								}
+							}
+							samRecordTable.remove(readName);
+						} else {
+							samRecordTable.put(readName, samRecord);
+						}
+					}
+				}
+				samRecordIterator.close();
+
+				if (samRecordTable.size() > 0) {
+					List<QueryInterval> mateIntervalList = new ArrayList();
+					Set<String> keySet = samRecordTable.keySet();
+					Iterator<String> iter = keySet.iterator();
+					while (iter.hasNext()) {
+						String key = iter.next();
+						SAMRecord samRecord = samRecordTable.get(key);
+						if (samRecord.getMateReferenceIndex() != -1) {
+							mateIntervalList.add(new QueryInterval(samRecord.getMateReferenceIndex(),
+									samRecord.getMateAlignmentStart(), samRecord.getMateAlignmentStart()));
+						}
+					}
+					Collections.sort(mateIntervalList);
+					QueryInterval[] mateIntervals = new QueryInterval[mateIntervalList.size()];
+					mateIntervalList.toArray(mateIntervals);
+					HashMap<String, SAMRecord> mateSAMRecordTable = getMateSAMRecordTable(mateIntervals, samRecordTable,
+							bamFile);
+					Set<String> keySet2 = samRecordTable.keySet();
+					Iterator<String> iter2 = keySet2.iterator();
+					while (iter2.hasNext()) {
+						String key = iter2.next();
+						SAMRecord samRecord = samRecordTable.get(key);
+						SAMRecord mateSAMRecord = mateSAMRecordTable.get(key);
+						if (samRecord == null || mateSAMRecord == null) {
+							continue;
+						}
+						if ((type == SVType.DELETION && isDeletionDRPs(samRecord, mateSAMRecord, median, sd, deviation))
+								|| (type == SVType.DUPLICATION && isDuplicationDRPs(samRecord, mateSAMRecord))
+								|| isOneEndAnchoredRead(samRecord, mateSAMRecord)
+								|| isSoftClippedRead(samRecord, mateSAMRecord)) {
+							FastqRecord fastqRecord = FastqEncoder.asFastqRecord(samRecord);
+							FastqRecord mateFastqRecord = FastqEncoder.asFastqRecord(mateSAMRecord);
+
 							if (fastqWriter1 == null) {
 								fastqWriter1 = new BasicFastqWriter(new File(fastqFile1));
 							}
 							if (fastqWriter2 == null) {
 								fastqWriter2 = new BasicFastqWriter(new File(fastqFile2));
 							}
-							FastqRecord fastqRecord = FastqEncoder.asFastqRecord(samRecord);
-							FastqRecord fastqRecord2 = FastqEncoder.asFastqRecord(samRecord2);
-							if (isProperPairedReads(samRecord, samRecord2)) {
+							if (isProperPairedReads(samRecord, mateSAMRecord)) {
 								numOfReads++;
-								if(numOfReads>MAX_NUM_READS_ASSEMBLY) {
-									if (fastqWriter1 != null && fastqWriter2 != null) {
-										fastqWriter1.close();
-										fastqWriter2.close();
-									}
-									return;
-								}
 								if (samRecord.getFirstOfPairFlag()) {
 									fastqWriter1.write(fastqRecord);
 								}
 								if (samRecord.getSecondOfPairFlag()) {
 									fastqWriter2.write(fastqRecord);
 								}
-								if (samRecord2.getFirstOfPairFlag()) {
-									fastqWriter1.write(fastqRecord2);
+								if (mateSAMRecord.getFirstOfPairFlag()) {
+									fastqWriter1.write(mateFastqRecord);
 								}
-								if (samRecord2.getSecondOfPairFlag()) {
-									fastqWriter2.write(fastqRecord2);
+								if (mateSAMRecord.getSecondOfPairFlag()) {
+									fastqWriter2.write(mateFastqRecord);
+								}
+								if (numOfReads > MAX_NUM_READS_ASSEMBLY) {
+									if (fastqWriter1 != null && fastqWriter2 != null) {
+										fastqWriter1.close();
+										fastqWriter2.close();
+									}
+									return;
 								}
 							}
 						}
-						samRecordTable.remove(readName);
-					} else {
-						samRecordTable.put(readName, samRecord);
 					}
 				}
-			}
-			samRecordIterator.close();
-			samReader.close();
 
-			if (samRecordTable.size() > 0) {
-				List<QueryInterval> mateIntervalList = new ArrayList();
-				Set<String> keySet = samRecordTable.keySet();
-				Iterator<String> iter = keySet.iterator();
-				while (iter.hasNext()) {
-					String key = iter.next();
-					SAMRecord samRecord = samRecordTable.get(key);
-					if (samRecord.getMateReferenceIndex() != -1) {
-						mateIntervalList.add(new QueryInterval(samRecord.getMateReferenceIndex(),
-								samRecord.getMateAlignmentStart(), samRecord.getMateAlignmentStart()));
-					}
-				}
-				Collections.sort(mateIntervalList);
-				QueryInterval[] mateIntervals = new QueryInterval[mateIntervalList.size()];
-				mateIntervalList.toArray(mateIntervals);
-				HashMap<String, SAMRecord> mateSAMRecordTable = getMateSAMRecordTable(mateIntervals, samRecordTable,
-						bamFile);
-				Set<String> keySet2 = samRecordTable.keySet();
-				Iterator<String> iter2 = keySet2.iterator();
-				while (iter2.hasNext()) {
-					String key = iter2.next();
-					SAMRecord samRecord = samRecordTable.get(key);
-					SAMRecord mateSAMRecord = mateSAMRecordTable.get(key);
-					if (samRecord == null || mateSAMRecord == null) {
-						continue;
-					}
-					if ((type == SVType.DELETION && isDeletionDRPs(samRecord, mateSAMRecord, median, sd, deviation))
-							|| (type == SVType.DUPLICATION && isDuplicationDRPs(samRecord, mateSAMRecord))
-							|| isOneEndAnchoredRead(samRecord, mateSAMRecord)
-							|| isSoftClippedRead(samRecord, mateSAMRecord)) {
-						FastqRecord fastqRecord = FastqEncoder.asFastqRecord(samRecord);
-						FastqRecord mateFastqRecord = FastqEncoder.asFastqRecord(mateSAMRecord);
-
-						if (fastqWriter1 == null) {
-							fastqWriter1 = new BasicFastqWriter(new File(fastqFile1));
-						}
-						if (fastqWriter2 == null) {
-							fastqWriter2 = new BasicFastqWriter(new File(fastqFile2));
-						}
-						if (isProperPairedReads(samRecord, mateSAMRecord)) {
-							numOfReads++;
-							if (samRecord.getFirstOfPairFlag()) {
-								fastqWriter1.write(fastqRecord);
-							}
-							if (samRecord.getSecondOfPairFlag()) {
-								fastqWriter2.write(fastqRecord);
-							}
-							if (mateSAMRecord.getFirstOfPairFlag()) {
-								fastqWriter1.write(mateFastqRecord);
-							}
-							if (mateSAMRecord.getSecondOfPairFlag()) {
-								fastqWriter2.write(mateFastqRecord);
-							}
-							if (numOfReads > MAX_NUM_READS_ASSEMBLY) {
-								if (fastqWriter1 != null && fastqWriter2 != null) {
-									fastqWriter1.close();
-									fastqWriter2.close();
-								}
-								return;
-							}
-						}
-					}
-				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 		if (fastqWriter1 != null && fastqWriter2 != null) {
@@ -360,20 +367,23 @@ public class SingleThreadRefinement implements Runnable {
 	private HashMap<String, SAMRecord> getMateSAMRecordTable(QueryInterval[] queryIntervals,
 			HashMap<String, SAMRecord> samRecordTable, String bamFile) throws IOException {
 		QueryInterval[] intervals = QueryInterval.optimizeIntervals(queryIntervals);
-		SamReader samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
-		SAMRecordIterator samRecordIterator = samReader.query(intervals, false);
 		HashMap<String, SAMRecord> mateRecordTable = new HashMap<String, SAMRecord>();
-		while (samRecordIterator.hasNext()) {
-			SAMRecord mateRecord = samRecordIterator.next();
-			String readName = mateRecord.getReadName();
-			if (samRecordTable.containsKey(readName)
-					&& !samRecordTable.get(readName).getReadString().equals(mateRecord.getReadString())) {
-				mateRecordTable.put(mateRecord.getReadName(), mateRecord);
+		try (SamReader samReader = SamReaderFactory.makeDefault().open(new File(bamFile))) {
+			SAMRecordIterator samRecordIterator = samReader.query(intervals, false);
+			while (samRecordIterator.hasNext()) {
+				SAMRecord mateRecord = samRecordIterator.next();
+				String readName = mateRecord.getReadName();
+				if (samRecordTable.containsKey(readName)
+						&& !samRecordTable.get(readName).getReadString().equals(mateRecord.getReadString())) {
+					mateRecordTable.put(mateRecord.getReadName(), mateRecord);
+				}
 			}
+			samRecordIterator.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		samRecordIterator.close();
-		samReader.close();
 		return mateRecordTable;
+
 	}
 
 	private boolean isOneEndAnchoredRead(SAMRecord record, SAMRecord record2) {

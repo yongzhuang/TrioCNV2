@@ -5,7 +5,9 @@ package cn.edu.hit.triocnv.breakpoint;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -70,9 +72,14 @@ public class MultiThreadBreakPointCalling {
 		String parameterFile = workDir + "/parameters.txt";
 		EstimateInsertSizes estimateInsertSizes = new EstimateInsertSizes(referenceFile, bamFileList, parameterFile);
 		estimateInsertSizes.estimate();
-
+		File tmpFile = new File(workDir + "/Temp_CNV.txt");
+		if (tmpFile.exists()) {
+			tmpFile.delete();
+		}
+		tmpFile.createNewFile();
 		ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(numOfThreads);
 		List<List<SVRecord>> list = subListBySegment(mergedSVRecordList, numOfThreads);
+
 		for (int i = 0; i < list.size(); i++) {
 			threadPool.execute(new SingleThreadRefinement(list.get(i), referenceFile, bamFileList, pedFile,
 					parameterFile, workDir, size, deviation));
@@ -126,7 +133,8 @@ public class MultiThreadBreakPointCalling {
 		String fatherID = trio.getFather().getIndividualID();
 		String motherID = trio.getMother().getIndividualID();
 		String offspringID = trio.getOffspring().getIndividualID();
-		PrintWriter writer = new PrintWriter(workDir + "/CNV.txt");
+
+		FileWriter writer = new FileWriter(workDir + "/CNV.txt");
 		writer.write("#CHROM\tSTART\tEND\t" + fatherID + "\t" + motherID + "\t" + offspringID + "\tEvidence\n");
 		for (SVRecord tmpSVRecord : resultSVRecordList) {
 			writer.write(tmpSVRecord.getChrom() + "\t" + tmpSVRecord.getStart() + "\t" + tmpSVRecord.getEnd() + "\t"
