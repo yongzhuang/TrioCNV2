@@ -16,8 +16,8 @@ If you want to run TrioCNV2, you'll need:
 4. Install String Graph Assembler (https://github.com/jts/sga) and add to the PATH
 
 # Running
-usage: java -jar TrioCNV2.jar [OPTIONS]
-**1. preprocess**
+usage: java -jar TrioCNV2.jar [OPTIONS]  
+**1. preprocess**  
    This option is used to extract the information from BAM files of the trio.
 
    usage: java -jar TrioCNV2.jar preprocess [OPTIONS]  
@@ -30,7 +30,7 @@ usage: java -jar TrioCNV2.jar [OPTIONS]
          --deviation    <INT>    deletion insert size cutoff, median+deviation*SD(optional, default 6)  
          --window       <INT>    window size (optional, default 200)  
          --min_mapping_quality   <INT>    minumum mapping quality (optional,default 0)  
-2. call
+**2. call**  
    This option is used to jointly detect copy number variations.  
 
    usage: java -jar TrioCNV2.jar call [OPTIONS]  
@@ -46,7 +46,7 @@ usage: java -jar TrioCNV2.jar [OPTIONS]
          --min_distance    <INT>    minumum distance to merge two adjacent CNVs (optional, default 10K)  
          --outlier         <FLOAT>  the predefined percentage of outliers (optional, default 0.025)  
          --nt              <INT>    number of threads (optional, default 1)  
-2. refine
+**3. refine**    
    This option is used to refine breakpoints.  
 
    usage: java -jar TrioCNV2.jar refine [OPTIONS]  
