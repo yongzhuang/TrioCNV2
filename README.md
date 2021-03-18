@@ -17,7 +17,7 @@ If you want to run TrioCNV2, you'll need:
 
 # Running
 usage: java -jar TrioCNV2.jar [OPTIONS]
-1. preprocess
+**1. preprocess**
    This option is used to extract the information from BAM files of the trio.
 
    usage: java -jar TrioCNV2.jar preprocess [OPTIONS]  
