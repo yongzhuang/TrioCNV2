@@ -13,6 +13,7 @@ If you want to run TrioCNV2, you'll need:
 1. Install Java SE Development Kit 8
 2. Install R (Rscript exectuable must be on the path)
 3. Install Runiversal (https://cran.r-project.org/web/packages/Runiversal/index.html) in R
+4. Install String Graph Assembler (https://github.com/jts/sga) and add to the PATH
 
 # Running
 usage: java -jar TrioCNV2.jar [OPTIONS]
