@@ -63,14 +63,14 @@ usage: java -jar TrioCNV2.jar [OPTIONS]
 
 1. The 'preprocess' command will output a folder which contains the read depth,  discordant read pairs and estimated parameters.  
 
-1) The bam list file is a single-column text file and each row is the path of one sample's BAM file in a trio.
-   Row 1: /path/to/father.bam
-   Row 2: /path/to/mother.bam
-   Row 3: /Path/to/offspring.bam
+1) The bam list file is a single-column text file and each row is the path of one sample's BAM file in a trio.  
+   Row 1: /path/to/father.bam  
+   Row 2: /path/to/mother.bam  
+   Row 3: /Path/to/offspring.bam  
    
-2. The 'call' command will take the ouput folder of the first step and also output a folder which contains the candiate CNVs got by the read depth and discordant read pair approach.  
+2. The 'call' command will take the ouput folder of the first step and also output a folder which contains the candiate CNVs got by the read depth and discordant read pair approach.    
 
-3. The 'refine' command will take the ouput folder of the second step and output a folder which contains the resulting SVs in the 'CNV.txt' file. 
+3. The 'refine' command will take the ouput folder of the second step and output a folder which contains the resulting SVs in the 'CNV.txt' file.   
    
    Column 1: chromosome  
    Column 2: start  
