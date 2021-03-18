@@ -79,7 +79,34 @@ usage: java -jar TrioCNV2.jar [OPTIONS]
    Column 5: SAMPLE2's variant state  
    Column 6: SAMPLE3's variant state
    Column 7: Evidence  
-   
 
+# Example   
+
+**1. preprocess**  
+
+ java -jar TrioCNV2.jar preprocess\    
+        -R /path/to/reference genome \    
+        -B /path/to/bam list file \    
+        -P /path/to/pedigree file \    
+        -M /paht/to/mappability file \    
+        -O /paht/to/triocnv2_step1    
+
+**2. call**  
+
+ java -jar TrioCNV2.jar call\    
+        -I /path/to/triocnv2_step1 \       
+        -P /path/to/pedigree file \    
+        -M /paht/to/mappability file \    
+        -O /paht/to/triocnv2_step2  
+	
+**3. refine**
+
+ java -jar TrioCNV2.jar refine\    
+        -I /path/to/triocnv2_step2 \       
+        -R /path/to/reference genome \          
+        -P /path/to/pedigree file \
+        -B /path/to/bam list file \             
+        -O /paht/to/triocnv2_step3  
+   
 # Contact 
    yongzhuang.liu@hit.edu.cn
