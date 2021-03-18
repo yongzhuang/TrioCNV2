@@ -63,7 +63,7 @@ usage: java -jar TrioCNV2.jar [OPTIONS]
 
 1. The 'preprocess' command will output a folder which contains the read depth,  discordant read pairs and estimated parameters.  
 
-1) The bam list file is a single-column text file and each row is the path of one sample's BAM file in a trio.  
+(1) The bam list file is a single-column text file and each row is the path of one sample's BAM file in a trio.  
    Row 1: /path/to/father.bam  
    Row 2: /path/to/mother.bam  
    Row 3: /Path/to/offspring.bam  
