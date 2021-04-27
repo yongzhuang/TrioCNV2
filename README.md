@@ -57,7 +57,8 @@ usage: java -jar TrioCNV2.jar [OPTIONS]
       -I,--input        <FILE>   input folder got by the preprocess step (required)  
       -O,--output       <FILE>   output folder(required)  
          --deviation    <INT>    deletion insert size cutoff, median+deviation*SD(optional, default 3)  
-         --size         <INT>    the size of expanded breakpoint regions (optional, default 400) 
+         --size         <INT>    the size of expanded breakpoint regions (optional, default 400)
+	 --nt              <INT>    number of threads (optional, default 8)  
          
 # Input and Output
 
